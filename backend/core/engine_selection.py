@@ -1,5 +1,5 @@
 import pandas as pd
-import yfinance as yf
+import core.yf_setup as yf
 import fundamentus
 from datetime import datetime
 

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
-import yfinance as yf
+import core.yf_setup as yf
 
 class BreakoutEngine:
     def __init__(self):

@@ -1,4 +1,4 @@
-import yfinance as yf
+import core.yf_setup as yf
 data = yf.download("BOVA11.SA", period="6mo", progress=False)
 print(data.columns)
 print(data.head(2))

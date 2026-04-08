@@ -1,4 +1,4 @@
-import yfinance as yf
+import core.yf_setup as yf
 import pandas as pd
 import fundamentus
 

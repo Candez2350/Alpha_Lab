@@ -3,6 +3,7 @@ uvicorn
 pandas
 numpy
 yfinance
+requests-cache
 fundamentus
 statsmodels
 scipy

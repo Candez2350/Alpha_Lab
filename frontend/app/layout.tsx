@@ -17,9 +17,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <aside className="w-20 lg:w-64 bg-white border-r border-slate-200 shadow-sm flex flex-col items-center lg:items-start py-8 px-4 flex-shrink-0 z-10 relative">
             <div className="mb-12 lg:px-4 w-full flex justify-center lg:justify-start">
               <span className="font-extrabold text-2xl hidden lg:block text-slate-900 tracking-tight">
-                Candez <span className="text-emerald-600">Quant</span>
+                Alpha <span className="text-emerald-600">Lab</span>
               </span>
-              <span className="font-extrabold text-2xl lg:hidden text-emerald-600">CQ</span>
+              <span className="font-extrabold text-2xl lg:hidden text-emerald-600">AL</span>
             </div>
             
             <nav className="flex flex-col gap-2 w-full">

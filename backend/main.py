@@ -100,7 +100,7 @@ async def get_volatility_analysis(ticker: str):
     Radar de Volatilidade: Detecta Squeeze (Bollinger/Keltner) e status da Vol Histórica.
     """
     try:
-        import yfinance as yf
+        import core.yf_setup as yf
         engine = OptionsEngine()
         data = yf.download(f"{ticker}.SA", period="6mo", progress=False)
         if data.empty:

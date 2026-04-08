@@ -3,7 +3,7 @@ import pandas as pd
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller
 from itertools import combinations
-import yfinance as yf
+import core.yf_setup as yf
 
 class LongShortEngine:
     def __init__(self):
