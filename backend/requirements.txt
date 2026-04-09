@@ -6,3 +6,4 @@ yfinance
 fundamentus
 statsmodels
 scipy
+requests-cache
