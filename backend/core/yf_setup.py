@@ -1,20 +1,6 @@
 import yfinance as yf_module
 import time
 import pandas as pd
-import requests_cache
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-
-# Configure session with caching and a realistic User-Agent to avoid YFRateLimitError
-session = requests_cache.CachedSession('http_cache', expire_after=3600)
-retry = Retry(connect=3, backoff_factor=0.5)
-adapter = HTTPAdapter(max_retries=retry)
-session.mount('http://', adapter)
-session.mount('https://', adapter)
-session.headers.update({
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-    "Accept": "*/*"
-})
 
 _cache = {}
 CACHE_TTL = 3600 # 1 hour
