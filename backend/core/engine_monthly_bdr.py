@@ -3,30 +3,20 @@ import core.yf_setup as yf
 import fundamentus
 import math
 from datetime import datetime
+from core.constants import BDR_TICKERS
 
 class MonthlyBdrEngine:
     def __init__(self):
-        # Pool mestre de BDRs extraído do seu script original 
-        self.bdrs_pool = [
-            'S1TX34.SA', 'W1DC34.SA', 'MUTC34.SA', 'J2BL34.SA', 'T1EL34.SA', 'HPQB34.SA', 'DELL34.SA',
-            'AVGO34.SA', 'QCOM34.SA', 'A1MD34.SA', 'ITLC34.SA', 'TSMC34.SA', 'SMCI34.SA', 'NVDC34.SA',
-            'M2PM34.SA', 'S1BS34.SA', 'G1FI34.SA', 'AURA33.SA', 'N1EM34.SA', 'VALE34.SA', 'RIO34.SA', 'FCXO34.SA',
-            'MSFT34.SA', 'AAPL34.SA', 'AMZO34.SA', 'GOGL34.SA', 'M1TA34.SA', 'P2LT34.SA', 'SSFO34.SA', 'ADBE34.SA', 'ORCL34.SA',
-            'W2YF34.SA', 'MELI34.SA', 'NIKE34.SA', 'MCDC34.SA', 'COCA34.SA', 'PEPB34.SA', 'LILY34.SA', 'N1VO34.SA', 'TSLA34.SA'
-        ]
+        # Pool mestre de BDRs importado de constants.py
+        self.bdrs_pool = BDR_TICKERS
 
     def get_top_br_stocks(self):
-        """Busca as ações BR mais líquidas via Fundamentus."""
+        """Busca as ações BR mais líquidas do IBRX_100 via Banco de Dados."""
         try:
-            df = fundamentus.get_resultado()
-            df.columns = [col.replace('.', '').replace('/', '').lower() for col in df.columns]
-            # Filtro de liquidez > 500k/dia 
-            df = df[df['liq2m'] > 500000] 
-            df = df.sort_values(by='liq2m', ascending=False).head(100)
-            
-            # Filtra apenas ações ordinárias, preferenciais e units (3, 4, 11) 
-            tickers = [f"{t}.SA" for t in df.index if t[-1] in ['3', '4', '11'] and not t.endswith('34') and t != 'AURA33']
-            return tickers
+            from core.db import engine
+            query = "SELECT ticker FROM ibrx_100 ORDER BY weight DESC"
+            df = pd.read_sql(query, engine)
+            return df['ticker'].tolist()
         except Exception:
             return []
 
@@ -35,7 +25,19 @@ class MonthlyBdrEngine:
         if not tickers: return pd.DataFrame()
         
         try:
-            data = yf.download(tickers, period="2y", progress=False)['Close']
+            from core.db import engine, DailyPrice
+            from sqlalchemy import select
+            
+            query = select(DailyPrice.date, DailyPrice.ticker, DailyPrice.close).where(
+                DailyPrice.ticker.in_(tickers)
+            ).order_by(DailyPrice.date.asc())
+            
+            df_sql = pd.read_sql(query, engine)
+            
+            if df_sql.empty: return pd.DataFrame()
+            
+            data = df_sql.pivot(index='date', columns='ticker', values='close')
+            data.index = pd.to_datetime(data.index)
             data = data.ffill().dropna(axis=1, how='all')
             
             scores = []
@@ -113,7 +115,7 @@ class MonthlyBdrEngine:
     def get_monthly_portfolio(self, capital, n_ativos_br=5, n_ativos_bdr=5):
         """Gera a carteira final unificada com os parâmetros do usuário."""
         br_picks = self.calculate_momentum_score(self.get_top_br_stocks(), "AÇÃO BR", top_n=n_ativos_br)
-        bdr_picks = self.calculate_momentum_score(self.bdrs_pool, "BDR USA", top_n=n_ativos_bdr)
+        bdr_picks = self.calculate_momentum_score(self.get_bdrs_pool(), "BDR USA", top_n=n_ativos_bdr)
         
         portfolio_raw = pd.concat([br_picks, bdr_picks], ignore_index=True)
         return self.optimize_allocation(portfolio_raw, capital)

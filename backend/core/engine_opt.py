@@ -143,28 +143,33 @@ class OptionsEngine:
         }
 
     def scan_market(self, tickers):
-        """Varre o mercado buscando ativos com Squeeze ou Qullamaggie ativos."""
-        tickers_sa = [f"{t}.SA" for t in tickers]
-        df_all = yf.download(tickers_sa, period="6mo", progress=False)
-        
-        results = []
-        for t_sa in tickers_sa:
-            try:
-                # Extrai dados do ativo específico
-                if isinstance(df_all.columns, pd.MultiIndex):
-                    if t_sa in df_all.columns.get_level_values(1):
-                        df_ativo = df_all.xs(t_sa, level=1, axis=1)
-                    else:
-                        continue
-                else:
-                    if len(tickers_sa) == 1:
-                        df_ativo = df_all
-                    else:
-                        continue # Não deveria acontecer para múltiplos
+        """Varre o mercado buscando ativos com Squeeze ou Qullamaggie ativos via Banco de Dados."""
+        try:
+            from core.db import engine, DailyPrice
+            from sqlalchemy import select
+            tickers_sa = [f"{t}.SA" for t in tickers]
+            if not tickers_sa: return []
+            
+            query = select(
+                DailyPrice.date, DailyPrice.ticker, DailyPrice.close, 
+                DailyPrice.high, DailyPrice.low, DailyPrice.open, DailyPrice.volume
+            ).where(DailyPrice.ticker.in_(tickers_sa)).order_by(DailyPrice.date.asc())
+            
+            df_all = pd.read_sql(query, engine)
+            if df_all.empty: return []
+
+            results = []
+            for t_sa in tickers_sa:
+                df_ativo = df_all[df_all['ticker'] == t_sa].copy()
+                if df_ativo.empty: continue
                 
-                df_ativo = df_ativo.dropna()
-                if len(df_ativo) < 60:
-                    continue
+                df_ativo.set_index('date', inplace=True)
+                df_ativo.index = pd.to_datetime(df_ativo.index)
+                
+                # Mapping column names to Capitalized to match existing logic:
+                df_ativo.rename(columns={'close': 'Close', 'high': 'High', 'low': 'Low', 'open': 'Open', 'volume': 'Volume'}, inplace=True)
+                
+                if len(df_ativo) < 60: continue
                 
                 analysis = self.analyze_volatility_and_squeeze(df_ativo)
                 
@@ -183,9 +188,9 @@ class OptionsEngine:
                         "direction": analysis['direction'],
                         "momentum_60d": analysis['qullamaggie']['momentum_60d']
                     })
-            except Exception as e:
-                pass
-                
-        # Ordenar por momentum (maior primeiro)
-        results = sorted(results, key=lambda x: x['momentum_60d'], reverse=True)
-        return results
+            
+            # Ordenar por momentum (maior primeiro)
+            results = sorted(results, key=lambda x: x['momentum_60d'], reverse=True)
+            return results
+        except Exception as e:
+            return []

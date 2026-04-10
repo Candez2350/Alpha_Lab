@@ -12,16 +12,25 @@ class LongShortEngine:
         self.min_confianca = 0.95 # p-value < 0.05
 
     def get_market_data(self, tickers):
-        """Baixa dados históricos para o universo selecionado."""
+        """Busca dados históricos do Supabase para o universo selecionado."""
+        from core.db import engine, DailyPrice
+        from sqlalchemy import select
         tickers_sa = [t + ".SA" if not t.endswith(".SA") else t for t in tickers]
-        df = yf.download(tickers_sa, period="2y", progress=False)
         
-        # Compatibilidade com yfinance novo (MultiIndex)
-        if isinstance(df.columns, pd.MultiIndex):
-            if 'Close' in df.columns.get_level_values(0):
-                df = df['Close']
-            else:
-                df = df.droplevel(0, axis=1)
+        if not tickers_sa:
+            return pd.DataFrame()
+            
+        query = select(DailyPrice.date, DailyPrice.ticker, DailyPrice.close).where(
+            DailyPrice.ticker.in_(tickers_sa)
+        ).order_by(DailyPrice.date.asc())
+        
+        df = pd.read_sql(query, engine)
+        
+        if df.empty:
+            return pd.DataFrame()
+            
+        df = df.pivot(index='date', columns='ticker', values='close')
+        df.index = pd.to_datetime(df.index)
 
         # Garante que temos pelo menos 250 dias de dados (maior janela)
         df = df.tail(260).ffill().bfill().dropna(axis=1) # Remove ativos que não têm histórico completo no período

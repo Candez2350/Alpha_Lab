@@ -6,3 +6,7 @@ yfinance
 fundamentus
 statsmodels
 scipy
+SQLAlchemy
+psycopg2-binary
+python-dotenv
+

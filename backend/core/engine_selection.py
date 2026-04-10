@@ -12,59 +12,74 @@ class SelectionEngine:
 
     def get_magic_formula_ranking(self, top_n=6):
         """
-        Filtra o mercado por ROIC e EV/EBIT, excluindo Financeiras e Utilities.
-        Baseado em Magic Formula.py e tbt.py.
+        Filtra o mercado por ROIC e EV/EBIT, excluindo Financeiras e Utilities via Banco de Dados.
         """
         try:
-            # 1. Coleta e Padronização 
-            df = fundamentus.get_resultado()
-            df.columns = [col.replace('.', '').replace('/', '').lower() for col in df.columns]
+            from core.db import engine
+            query = "SELECT ticker, evebit, roic, liq2m, cotacao, setor FROM fundamentals"
+            df = pd.read_sql(query, engine)
             
-            # 2. Filtros de Liquidez e Qualidade 
+            if df.empty: return pd.DataFrame()
+            
+            # Filtros de Liquidez e Qualidade 
             df = df[df['liq2m'] > 1000000] # Liquidez > R$ 1M/dia 
             df = df[df['evebit'] > 0]       # EV/EBIT Positivo 
             df = df[df['roic'] > 0]         # ROIC Positivo 
 
-            # 3. Exclusão de Setores 
-            excluir_ids = [self.setor_bancos, self.setor_utils, self.setor_seguros]
-            tickers_excluir = []
-            for s_id in excluir_ids:
-                try: tickers_excluir.extend(fundamentus.list_papel_setor(s_id))
-                except: pass
-            df = df[~df.index.isin(tickers_excluir)]
+            # Exclusão de Setores 
+            df = df[~df['setor'].isin(['banco', 'util', 'seguro'])]
 
-            # 4. Remoção de Duplicatas (Mantém a mais líquida da mesma empresa) 
-            df['base'] = df.index.str[:4]
+            # Remoção de Duplicatas (Mantém a mais líquida da mesma empresa) 
+            df['base'] = df['ticker'].str[:4]
             df = df.sort_values('liq2m', ascending=False).drop_duplicates(subset='base', keep='first')
 
-            # 5. Cálculo dos Ranks 
+            # Cálculo dos Ranks 
             df['rank_ev_ebit'] = df['evebit'].rank(ascending=True)
             df['rank_roic'] = df['roic'].rank(ascending=False)
             df['magic_score'] = df['rank_ev_ebit'] + df['rank_roic']
             
-            # Retorna o DataFrame ordenado com os dados relevantes para o front-end
             res = df.sort_values('magic_score').head(top_n)
-            return res[['evebit', 'roic', 'magic_score', 'cotacao']].reset_index().rename(columns={'index': 'ticker', 'papel': 'ticker'})
+            return res[['ticker', 'evebit', 'roic', 'magic_score', 'cotacao']]
         except Exception:
             return pd.DataFrame()
 
     def get_momentum_ranking(self, n_bancos=2, n_eletricas=2):
         """
-        Captura a tendência de 12 meses e 3 meses em Bancos e Elétricas.
-        Baseado em tbt.py e momentum.py.
+        Captura a tendência de 12 meses e 3 meses em Bancos e Elétricas via Banco de Dados.
         """
         try:
-            # 1. Listas de Setores Específicos
+            from core.db import engine, Fundamental, DailyPrice
+            from sqlalchemy import select
+            
+            query_setores = select(Fundamental.ticker, Fundamental.setor).where(
+                Fundamental.setor.in_(['banco', 'util'])
+            )
+            df_setores = pd.read_sql(query_setores, engine)
+            
             bancos_garantidos = ['ITUB4', 'BBDC4', 'BBAS3', 'SANB11', 'BPAC11'] 
-            try:
-                setor_utils = fundamentus.list_papel_setor(self.setor_utils)
-            except:
-                setor_utils = []
             
-            target_tickers = list(set(bancos_garantidos + setor_utils))
+            if not df_setores.empty:
+                utils_db = df_setores[df_setores['setor'] == 'util']['ticker'].tolist()
+                bancos_db = df_setores[df_setores['setor'] == 'banco']['ticker'].tolist()
+            else:
+                utils_db = []
+                bancos_db = []
             
-            # 2. Download de Dados
-            data = yf.download([t + ".SA" for t in target_tickers], period="14mo", progress=False)['Close']
+            target_tickers = list(set(bancos_garantidos + utils_db + bancos_db))
+            if not target_tickers: return pd.DataFrame()
+            
+            target_tickers_sa = [f"{t}.SA" for t in target_tickers]
+            
+            query_prices = select(DailyPrice.date, DailyPrice.ticker, DailyPrice.close).where(
+                DailyPrice.ticker.in_(target_tickers_sa)
+            ).order_by(DailyPrice.date.asc())
+            
+            df_prices = pd.read_sql(query_prices, engine)
+            
+            if df_prices.empty: return pd.DataFrame()
+            
+            data = df_prices.pivot(index='date', columns='ticker', values='close')
+            data.index = pd.to_datetime(data.index)
             data = data.ffill().dropna(axis=1, how='all')
 
             momentum_results = []
@@ -79,7 +94,7 @@ class SelectionEngine:
                 ret_12m = (p_atual / serie.iloc[-252]) - 1
                 ret_3m = (p_atual / serie.iloc[-63]) - 1
                 
-                setor = "BANCO" if ticker in bancos_garantidos else "ELETRICA"
+                setor = "BANCO" if ticker in bancos_garantidos or ticker in bancos_db else "ELETRICA"
                 
                 momentum_results.append({
                     'ticker': ticker,

@@ -1,7 +1,9 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends, Security
+from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 import uvicorn
+import os
 
 # Motores Core do Sistema
 from core.engine_ls import LongShortEngine
@@ -9,12 +11,20 @@ from core.engine_opt import OptionsEngine
 from core.engine_selection import SelectionEngine
 from core.engine_monthly_bdr import MonthlyBdrEngine
 from core.constants import VIP_TICKERS, IBRX_100
+from core.db import init_db, get_db
+from sqlalchemy.orm import Session
+from core.sync_etl import run_sync_pipeline
 
 app = FastAPI(
     title="Candez Quant Platform API",
     description="Terminal de Inteligência Quantitativa: Arbitragem, Opções e Alocação Tática",
     version="1.1.0"
 )
+
+# Initialize DB
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 # --- CONFIGURAÇÃO DE CORS ---
 # Permite que o Front-end (Vercel) consuma os dados do Back-end (Railway/Render)
@@ -26,7 +36,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
+
+def get_api_key(api_key_header: str = Security(api_key_header)):
+    expected_key = os.getenv("SYNC_SECRET_KEY", "default_secret_for_local_dev")
+    if api_key_header == expected_key:
+        return api_key_header
+    raise HTTPException(status_code=403, detail="Could not validate credentials")
+
+@app.post("/api/system/sync", tags=["System"])
+async def sync_database(api_key: str = Depends(get_api_key), db: Session = Depends(get_db)):
+    """
+    Sincroniza os dados de mercado e fundamentos para o banco de dados.
+    """
+    try:
+        return run_sync_pipeline(db)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro no pipeline de sincronização: {str(e)}")
+
 # --- 1. MÓDULO DE SELEÇÃO E ALPHA (STOCK PICKING) ---
+
 
 @app.get("/api/selection/magic-momentum", tags=["Seleção"])
 async def get_alpha_picks(
@@ -100,13 +129,26 @@ async def get_volatility_analysis(ticker: str):
     Radar de Volatilidade: Detecta Squeeze (Bollinger/Keltner) e status da Vol Histórica.
     """
     try:
-        import core.yf_setup as yf
-        engine = OptionsEngine()
-        data = yf.download(f"{ticker}.SA", period="6mo", progress=False)
-        if data.empty:
-            raise ValueError("Ativo não encontrado")
+        from core.db import engine
+        import pandas as pd
+        engine_opt = OptionsEngine()
         
-        analysis = engine.analyze_volatility_and_squeeze(data)
+        ticker_sa = f"{ticker}.SA"
+        query = select(
+            DailyPrice.date, DailyPrice.ticker, DailyPrice.close, 
+            DailyPrice.high, DailyPrice.low, DailyPrice.open, DailyPrice.volume
+        ).where(DailyPrice.ticker == ticker_sa).order_by(DailyPrice.date.asc())
+        
+        df_ativo = pd.read_sql(query, engine)
+        
+        if df_ativo.empty:
+            raise ValueError("Ativo não encontrado ou sem histórico no banco de dados")
+            
+        df_ativo.set_index('date', inplace=True)
+        df_ativo.index = pd.to_datetime(df_ativo.index)
+        df_ativo.rename(columns={'close': 'Close', 'high': 'High', 'low': 'Low', 'open': 'Open', 'volume': 'Volume'}, inplace=True)
+        
+        analysis = engine_opt.analyze_volatility_and_squeeze(df_ativo)
         return {"ticker": ticker, "analysis": analysis}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -117,8 +159,19 @@ async def get_options_scan():
     Varre o IBRX-100 buscando ativos com Squeeze ativado ou setups Qullamaggie formando/ativados.
     """
     try:
-        engine = OptionsEngine()
-        results = engine.scan_market(get_ibrx_100())
+        from core.db import engine
+        import pandas as pd
+        engine_opt = OptionsEngine()
+        
+        # Get IBRX 100 tickers from DB
+        query = "SELECT ticker FROM ibrx_100"
+        df_ibrx = pd.read_sql(query, engine)
+        tickers = [t.replace('.SA', '') for t in df_ibrx['ticker'].tolist()]
+        
+        if not tickers:
+            tickers = IBRX_100 # Fallback
+            
+        results = engine_opt.scan_market(tickers)
         return {"status": "success", "count": len(results), "data": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no Scanner de Opções: {str(e)}")
