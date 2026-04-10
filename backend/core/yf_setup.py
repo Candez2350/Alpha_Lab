@@ -1,6 +1,16 @@
+import os
 import yfinance as yf_module
 import time
 import pandas as pd
+
+# --- Fix for Render (TzCache error) ---
+cache_path = "/tmp/yfinance_cache"
+try:
+    os.makedirs(cache_path, exist_ok=True)
+    yf_module.set_tz_cache_location(cache_path)
+except Exception:
+    pass
+# --------------------------------------
 
 _cache = {}
 CACHE_TTL = 3600 # 1 hour
@@ -27,6 +37,11 @@ def download(tickers, *args, **kwargs):
             del kwargs['session']
         if 'progress' not in kwargs:
             kwargs['progress'] = False
+            
+        # Fix for RateLimitError: disable multi-threading to avoid bursts
+        if 'threads' not in kwargs:
+            kwargs['threads'] = False
+            
         data = yf_module.download(tickers, *args, **kwargs)
         _cache[cache_key] = (data, now)
         return data

@@ -53,8 +53,8 @@ class LongShortEngine:
             history_z_score = [(r - res_mean) / res_std for r in residuos.tail(7)]
             
             # Half-Life (Tempo médio de retorno à média) 
-            res_lag = residuos.shift(1).fillna(method='bfill')
-            ret = (residuos - res_lag).fillna(method='bfill')
+            res_lag = residuos.shift(1).bfill()
+            ret = (residuos - res_lag).bfill()
             hl_model = sm.OLS(ret, sm.add_constant(res_lag)).fit()
             param = hl_model.params.iloc[1]
             hl = -np.log(2) / param if param < 0 else 999
