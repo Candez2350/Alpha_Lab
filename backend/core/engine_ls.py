@@ -41,8 +41,8 @@ class LongShortEngine:
             beta = model.params.iloc[1]
             residuos = model.resid
             
-            # ADF (Teste de Dickey-Fuller para Estacionaridade) 
-            p_val = adfuller(residuos)[1]
+            # ADF (Teste de Dickey-Fuller para Estacionaridade) - Otimizado para velocidade
+            p_val = adfuller(residuos, maxlag=1, autolag=None)[1]
             
             # Z-Score (Distorção atual vs Média Histórica) 
             res_mean = residuos.mean()

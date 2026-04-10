@@ -38,9 +38,9 @@ def download(tickers, *args, **kwargs):
         if 'progress' not in kwargs:
             kwargs['progress'] = False
             
-        # Fix for RateLimitError: disable multi-threading to avoid bursts
+        # Fix for RateLimitError: limit multi-threading to 5 to avoid bursts but keep speed
         if 'threads' not in kwargs:
-            kwargs['threads'] = False
+            kwargs['threads'] = 5
             
         data = yf_module.download(tickers, *args, **kwargs)
         _cache[cache_key] = (data, now)
