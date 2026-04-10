@@ -37,7 +37,8 @@ def download(tickers, *args, **kwargs):
     time.sleep(0.5)
     
     try:
-        kwargs['session'] = session
+        if 'session' in kwargs:
+            del kwargs['session']
         if 'progress' not in kwargs:
             kwargs['progress'] = False
         data = yf_module.download(tickers, *args, **kwargs)
@@ -50,5 +51,6 @@ def download(tickers, *args, **kwargs):
         raise e
 
 def Ticker(*args, **kwargs):
-    kwargs['session'] = session
+    if 'session' in kwargs:
+        del kwargs['session']
     return yf_module.Ticker(*args, **kwargs)
