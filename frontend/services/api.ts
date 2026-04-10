@@ -3,7 +3,7 @@ import { IPortfolio, IAlphaSelection, IPairTrade } from '@/types/quant';
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
-  timeout: 60000,
+  timeout: 120000,
 });
 
 export const QuantService = {

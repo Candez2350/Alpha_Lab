@@ -1,16 +1,60 @@
-IBRX_100 = [
-    "ABEV3", "ALOS3", "ALPA4", "ASAI3", "AZUL4", "B3SA3", "BBAS3", "BBDC3", "BBDC4",
-    "BBSE3", "BEEF3", "BPAC11", "BPAN4", "BRAP4", "BRAV3", "BRFS3", "BRKM5", "CAML3",
-    "CASH3", "CCRO3", "CMIG4", "CMIN3", "COGN3", "CPFE3", "CPLE6", "CRFB3", "CSAN3",
-    "CSNA3", "CVCB3", "CYRE3", "DXCO3", "ECOR3", "EGIE3", "ELET3", "ELET6", "EMBR3",
-    "ENEV3", "ENGI11", "EQTL3", "EZTC3", "FLRY3", "GGBR4", "GOAU4", "GOLL4", "HAPV3",
-    "HYPE3", "IGTI11", "IRBR3", "ITSA4", "ITUB4", "JBSS3", "JHSF3", "KLBN11", "LREN3",
-    "LWSA3", "MGLU3", "MOVI3", "MRFG3", "MRVE3", "MULT3", "NTCO3", "PCAR3", "PETR3",
-    "PETR4", "PETZ3", "PLPL3", "POMO4", "PRIO3", "PSSA3", "RADL3", "RAIL3", "RAIZ4",
-    "RANI3", "RDOR3", "RECV3", "RENT3", "ROMI3", "SANB11", "SBSP3", "SLCE3", "SMTO3",
-    "STBP3", "SUZB3", "TAEE11", "TIMS3", "TOTS3", "TRPL4", "UGPA3", "USIM5", "VALE3",
-    "VBBR3", "VIVA3", "VIVT3", "WEGE3", "YDUQ3", "VAMO3", "BOVA11", "SMAL11"
-]
+import fundamentus
+import time
+
+_cache_ibrx = None
+_cache_time = 0
+
+def get_ibrx_100():
+    """
+    Retorna dinamicamente os 100 ativos mais líquidos da B3 usando o Fundamentus.
+    Isso substitui a lista estática do IBRX-100 e evita erros com ativos deslistados
+    que quebravam o download do yfinance.
+    """
+    global _cache_ibrx, _cache_time
+    
+    # Cache de 24 horas (86400 segundos) para não sobrecarregar o Fundamentus
+    if _cache_ibrx is not None and time.time() - _cache_time < 86400:
+        return _cache_ibrx
+        
+    try:
+        df = fundamentus.get_resultado()
+        # O index do dataframe é o 'papel' (ticker)
+        # Filtra fundos imobiliários e BDRs simples se necessário, mas as mais líquidas 
+        # do Fundamentus geralmente são as do IBRX.
+        
+        # Pega as 100 mais líquidas (evita as com baixa liquidez ou deslistadas)
+        top_100 = df.sort_values('liq2m', ascending=False).head(100).index.tolist()
+        
+        # Filtra apenas tickers que parecem ações comuns (terminam em 3, 4, 5, 6, 11)
+        valid_tickers = [t for t in top_100 if any(t.endswith(str(n)) for n in [3, 4, 5, 6, 11])]
+        
+        # Se por algum motivo a lista estiver vazia, levanta erro para ir pro fallback
+        if len(valid_tickers) < 50:
+            raise ValueError("Poucos ativos retornados do Fundamentus")
+            
+        _cache_ibrx = valid_tickers
+        _cache_time = time.time()
+        return _cache_ibrx
+    except Exception as e:
+        print(f"Erro ao buscar universo dinâmico: {e}. Usando fallback estático.")
+        # FALLBACK: Lista Estática de Segurança
+        return [
+            "ABEV3", "ALOS3", "ALPA4", "ASAI3", "B3SA3", "BBAS3", "BBDC3", "BBDC4",
+            "BBSE3", "BEEF3", "BPAC11", "BRAP4", "BRAV3", "BRKM5", "CAML3",
+            "CASH3", "CMIG4", "CMIN3", "COGN3", "CPFE3", "CSAN3",
+            "CSNA3", "CVCB3", "CYRE3", "DXCO3", "ECOR3", "EGIE3",
+            "ENEV3", "ENGI11", "EQTL3", "EZTC3", "FLRY3", "GGBR4", "GOAU4", "HAPV3",
+            "HYPE3", "IGTI11", "IRBR3", "ITSA4", "ITUB4", "KLBN11", "LREN3",
+            "LWSA3", "MGLU3", "MOVI3", "MRVE3", "MULT3", "PCAR3", "PETR3",
+            "PETR4", "PLPL3", "POMO4", "PRIO3", "PSSA3", "RADL3", "RAIL3", "RAIZ4",
+            "RANI3", "RDOR3", "RECV3", "RENT3", "ROMI3", "SANB11", "SBSP3", "SLCE3", "SMTO3",
+            "SUZB3", "TAEE11", "TIMS3", "TOTS3", "UGPA3", "USIM5", "VALE3",
+            "VBBR3", "VIVA3", "VIVT3", "WEGE3", "YDUQ3", "VAMO3", "BOVA11", "SMAL11"
+        ]
+
+# Para manter compatibilidade onde for importado diretamente, exportamos como property
+# Mas o ideal é chamar get_ibrx_100()
+IBRX_100 = get_ibrx_100()
 
 # LISTA VIP (LIQUIDEZ ALTA EM OPÇÕES)
 VIP_TICKERS = [

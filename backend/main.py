@@ -118,7 +118,7 @@ async def get_options_scan():
     """
     try:
         engine = OptionsEngine()
-        results = engine.scan_market(IBRX_100)
+        results = engine.scan_market(get_ibrx_100())
         return {"status": "success", "count": len(results), "data": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no Scanner de Opções: {str(e)}")
