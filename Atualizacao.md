@@ -46,4 +46,6 @@ Ao rodar a análise de volatilidade (HV20, HV50, Squeeze) e setups Qullamaggie p
 ### Fase 4: Frontend e Deploy
 - [x] Ajustar o Frontend (`frontend/services/api.ts` e páginas) se o formato do JSON retornado tiver alguma mudança (geralmente não deve ter, mantendo o contrato da API).
 - [x] Adicionar/Agendar o gatilho da rotina diária (23:30) no backend (via `APScheduler`, rota protegida chamada por um Cron do Render/Vercel ou serviço de mensageria).
-- [x] Validar todos os módulos no navegador para garantir que a transição
+- [x] Validar todos os módulos no navegador para garantir que a transição ocorra de forma fluida.
+- [x] Corrigido erro 500 no `vol-radar` alterando para retorno 404 quando o ativo não possuir análise na base de dados.
+- [x] Corrigido o filtro de Scanner do IBRX-100 para listar corretamente apenas os ativos com Squeeze ou setups do Qullamaggie ativos/formando.

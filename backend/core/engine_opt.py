@@ -52,8 +52,15 @@ class BreakoutEngine:
         dist_sma10 = (close.iloc[-1] / sma10.iloc[-1]) - 1
         is_parabolic = (rsi.iloc[-1] > 75) and (dist_sma10 > 0.15)
 
+        if is_breakout:
+            q_status = "🔥 BREAKOUT"
+        elif trend_ok and tight_ok:
+            q_status = "💤 SETUP FORMANDO"
+        else:
+            q_status = "INATIVO"
+
         return {
-            "breakout": {"active": bool(trend_ok and (tight_ok or is_breakout)), "status": "🔥 BREAKOUT" if is_breakout else "💤 SETUP FORMANDO"},
+            "breakout": {"active": bool(trend_ok and (tight_ok or is_breakout)), "status": q_status},
             "episodic_pivot": {"active": bool(is_ep), "gap_pct": round(float(gap_pct) * 100, 2) if not pd.isna(gap_pct) else 0},
             "parabolic_short": {"active": bool(is_parabolic), "rsi": round(float(rsi.iloc[-1]), 1) if not pd.isna(rsi.iloc[-1]) else 0},
             "momentum_60d": round(float(momentum_60d) * 100, 2) if not pd.isna(momentum_60d) else 0

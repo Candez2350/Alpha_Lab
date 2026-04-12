@@ -8,8 +8,11 @@ Recentemente, a interface da plataforma foi reformulada com um **Design Claro (L
 
 ## 🏗 Arquitetura
 
-- **Backend:** Python 3, FastAPI, Pandas, NumPy, yfinance, fundamentus, statsmodels, scipy.
-- **Frontend:** Next.js 14+, React 19, TypeScript, TailwindCSS, Tremor (para gráficos e componentes de UI).
+A plataforma utiliza um modelo de processamento em batch (ETL) para garantir extrema performance e resiliência contra rate-limits das APIs financeiras (ex: Yahoo Finance):
+
+- **Backend:** Python 3, FastAPI, Pandas, NumPy, yfinance, statsmodels.
+- **Banco de Dados / Cache:** PostgreSQL (Supabase) via SQLAlchemy. Os algoritmos quantitativos são executados uma vez ao dia via **Cron Job** (rotina em background) gravando os rankings e métricas diretamente no banco de dados. Os endpoints da API apenas consultam estas tabelas instantaneamente, resultando em latência de milissegundos.
+- **Frontend:** Next.js 14+, React 19, TypeScript, TailwindCSS, Tremor.
 
 ## 🚀 Funcionalidades e Telas Principais
 
@@ -63,3 +66,25 @@ A interface web contempla dashboards dedicados para cada um dos motores da plata
    ```
 
 Acesse o sistema web através de `http://localhost:3000` e a documentação da API em `http://localhost:8000/docs`.
+
+## ☁️ Deploy (Vercel & Render)
+
+Com a nova arquitetura baseada em cron jobs diários e cache em banco de dados, siga as instruções abaixo para realizar o deploy em produção:
+
+### 1. Render (Backend + Database)
+O backend foi desenhado para ser hospedado no Render, garantindo a execução das análises quantitativas.
+- **Banco de Dados:** Recomendamos usar o [Supabase](https://supabase.com) para obter um banco de dados PostgreSQL gratuito e de alta performance. Copie a `DATABASE_URL` (Connection String) e adicione nas variáveis de ambiente (*Environment Variables*) do Render.
+- **Serviço Web:** Crie um *Web Service* no Render apontando para o seu repositório:
+  - **Root Directory:** `backend`
+  - **Build Command:** `pip install -r requirements.txt`
+  - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- **Rotina Diária (Cron Job):** O banco precisa ser atualizado todos os dias após o fechamento do pregão.
+  - Para acionar a rotina, o Vercel Cron chamará a rota segura `POST /api/system/cron`.
+  - Configure uma variável de ambiente chamada `SYNC_SECRET_KEY` no Render com uma senha forte. Essa mesma senha será enviada pelo Vercel.
+- **Atenção (Primeira Execução):** Quando o backend rodar pela primeira vez no Render, ele identificará que o banco está vazio e começará a baixar os dados e popular os rankings em background automaticamente (isso pode levar alguns minutos).
+
+### 2. Vercel (Frontend + Gatilho Cron)
+O Frontend em Next.js é perfeitamente integrado à Vercel.
+- **Deploy do Frontend:** Importe o projeto no dashboard da Vercel e especifique o *Root Directory* como `frontend`. A Vercel configurará o Next.js automaticamente.
+- **Variáveis de Ambiente:** Configure a variável `NEXT_PUBLIC_API_URL` com a URL pública do seu backend no Render (ex: `https://seu-backend.onrender.com/api`). Configure também a `SYNC_SECRET_KEY` com a mesma senha definida no Render.
+- **Cron Job (Gatilho):** O repositório contém um arquivo `vercel.json` no frontend que agenda a execução diária. A função serverless em `frontend/app/api/cron/sync/route.ts` será disparada pela Vercel e fará o repasse (trigger) seguro chamando o endpoint do backend.

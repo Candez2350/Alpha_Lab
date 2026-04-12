@@ -302,7 +302,7 @@ async def get_options_scan(db: Session = Depends(get_db)):
         # Filtra apenas os que têm algo interessante
         query = select(RankOptionsAnalysis).where(
             (RankOptionsAnalysis.squeeze_on == True) | 
-            (RankOptionsAnalysis.qullamaggie_status != '') |
+            (RankOptionsAnalysis.qullamaggie_status.in_(['🔥 BREAKOUT', '💤 SETUP FORMANDO'])) |
             (RankOptionsAnalysis.is_ep == True) |
             (RankOptionsAnalysis.is_parabolic == True)
         ).order_by(RankOptionsAnalysis.momentum_60d.desc())
@@ -336,4 +336,4 @@ async def system_status():
     }
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000) host="0.0.0.0", port=8000)
