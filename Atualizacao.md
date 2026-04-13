@@ -51,3 +51,4 @@ Ao rodar a análise de volatilidade (HV20, HV50, Squeeze) e setups Qullamaggie p
 - [x] Corrigido o filtro de Scanner do IBRX-100 para listar corretamente apenas os ativos com Squeeze ou setups do Qullamaggie ativos/formando.
 - [x] Corrigido a exibição de NaN no Momentum da Seleção Alpha, removendo a coluna "Retorno 12M" que não é mais cacheada, além de forçar conversão correta do Score no Cronjob.
 - [x] Refatorado Design: Adicionado efeito visual Gradiente + Glow no logo "Alpha Lab" e criada uma Landing Page interativa como nova tela de Início (`/`).
+- [x] Responsividade Completa: A aplicação agora é 100% responsiva (Mobile First), com a Navbar lateral se transformando dinamicamente em uma "Bottom Navigation Bar" em celulares.
