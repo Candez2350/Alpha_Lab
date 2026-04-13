@@ -3,10 +3,6 @@
     {
       "path": "/api/cron/sync",
       "schedule": "30 21 * * 1-5"
-    },
-    {
-      "path": "/api/cron/ping",
-      "schedule": "*/14 0,1,5-23 * * *"
     }
   ]
 }
