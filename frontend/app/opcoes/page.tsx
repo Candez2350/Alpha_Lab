@@ -1,43 +1,45 @@
 'use client'
-import { useState } from 'react'
-import { 
+import { useState, useEffect } from 'react'
+import {
   Card,
-  Table, 
-  TableHead, 
-  TableRow, 
-  TableHeaderCell, 
-  TableBody, 
+  Table,
+  TableHead,
+  TableRow,
+  TableHeaderCell,
+  TableBody,
   TableCell
 } from '@tremor/react'
 import { Radar, Target, MoveUpRight, MoveDownRight, Flame, ChevronUp, ChevronDown, AlertCircle, Search, ActivitySquare } from 'lucide-react'
 import { api } from '@/services/api'
 
-// Hardcoded IBRX_100 list from constants to populate the select efficiently
-const IBRX_100 = [
-    "ABEV3", "ALOS3", "ALPA4", "ASAI3", "AZUL4", "B3SA3", "BBAS3", "BBDC3", "BBDC4",
-    "BBSE3", "BEEF3", "BPAC11", "BPAN4", "BRAP4", "BRAV3", "BRFS3", "BRKM5", "CAML3",
-    "CASH3", "CCRO3", "CMIG4", "CMIN3", "COGN3", "CPFE3", "CPLE6", "CRFB3", "CSAN3",
-    "CSNA3", "CVCB3", "CYRE3", "DXCO3", "ECOR3", "EGIE3", "ELET3", "ELET6", "EMBR3",
-    "ENEV3", "ENGI11", "EQTL3", "EZTC3", "FLRY3", "GGBR4", "GOAU4", "GOLL4", "HAPV3",
-    "HYPE3", "IGTI11", "IRBR3", "ITSA4", "ITUB4", "JBSS3", "JHSF3", "KLBN11", "LREN3",
-    "LWSA3", "MGLU3", "MOVI3", "MRFG3", "MRVE3", "MULT3", "NTCO3", "PCAR3", "PETR3",
-    "PETR4", "PETZ3", "PLPL3", "POMO4", "PRIO3", "PSSA3", "RADL3", "RAIL3", "RAIZ4",
-    "RANI3", "RDOR3", "RECV3", "RENT3", "ROMI3", "SANB11", "SBSP3", "SLCE3", "SMTO3",
-    "STBP3", "SUZB3", "TAEE11", "TIMS3", "TOTS3", "TRPL4", "UGPA3", "USIM5", "VALE3",
-    "VBBR3", "VIVA3", "VIVT3", "WEGE3", "YDUQ3", "VAMO3", "BOVA11", "SMAL11"
-].sort();
-
 export default function OpcoesDashboard() {
-  const [ticker, setTicker] = useState<string>('BOVA11');
+  const [tickerList, setTickerList] = useState<string[]>([]);
+  const [ticker, setTicker] = useState<string>('VALE3');
   const [loading, setLoading] = useState<boolean>(false);
   const [data, setData] = useState<any>(null);
-  
+
   const [scanLoading, setScanLoading] = useState<boolean>(false);
   const [scanData, setScanData] = useState<any[]>([]);
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(true);
 
-  const fetchRadar = async () => {
-    if (!ticker) return;
+  useEffect(() => {
+    const fetchTickers = async () => {
+      try {
+        const response = await api.get('/options/tickers');
+        if (response.data && response.data.tickers && response.data.tickers.length > 0) {
+          setTickerList(response.data.tickers);
+          if (!response.data.tickers.includes(ticker)) {
+            setTicker(response.data.tickers[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar lista de tickers:", error);
+      }
+    };
+    fetchTickers();
+  }, []);
+
+  const fetchRadar = async () => {    if (!ticker) return;
     setLoading(true);
     setData(null);
     try {
@@ -82,7 +84,7 @@ export default function OpcoesDashboard() {
                   onChange={(e) => setTicker(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl shadow-sm focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-900 font-semibold text-lg appearance-none cursor-pointer"
                 >
-                  {IBRX_100.map(t => (
+                  {tickerList.map(t => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>

@@ -158,8 +158,7 @@ export default function AlphaDashboard() {
                     <TableRow className="border-b border-slate-100">
                       <TableHeaderCell className="text-slate-400 font-bold py-3 px-6 w-16">Setor</TableHeaderCell>
                       <TableHeaderCell className="text-slate-600 font-bold py-3 px-6">Ticker</TableHeaderCell>
-                      <TableHeaderCell className="text-slate-600 font-bold text-right py-3 px-6">Retorno 12M</TableHeaderCell>
-                      <TableHeaderCell className="text-slate-600 font-bold text-right py-3 px-6">Score</TableHeaderCell>
+                      <TableHeaderCell className="text-slate-600 font-bold text-right py-3 px-6">Score (Momentum)</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -176,10 +175,7 @@ export default function AlphaDashboard() {
                           <span className="font-extrabold text-slate-900 bg-slate-100 px-2 py-1 rounded-md border border-slate-200">{item.ticker}</span>
                         </TableCell>
                         <TableCell className="text-right text-emerald-600 font-bold py-4 px-6">
-                          {(item.ret_12m * 100).toFixed(1)}%
-                        </TableCell>
-                        <TableCell className="text-right text-slate-500 font-bold py-4 px-6">
-                          {item.score.toFixed(2)}
+                          {item.score ? item.score.toFixed(2) : "0.00"}
                         </TableCell>
                       </TableRow>
                     ))}

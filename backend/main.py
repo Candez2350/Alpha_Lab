@@ -290,6 +290,33 @@ async def get_volatility_analysis(ticker: str, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/options/tickers", tags=["Opções"])
+async def get_options_tickers(db: Session = Depends(get_db)):
+    """
+    Retorna a lista de ativos do IBRX-100 cadastrados no banco de dados,
+    ordenados alfabeticamente e sem BOVA11 e SMAL11.
+    """
+    try:
+        from core.db import IBRX100
+        from sqlalchemy import select
+        
+        query = select(IBRX100.ticker).where(
+            ~IBRX100.ticker.in_(['BOVA11', 'SMAL11', 'BOVA11.SA', 'SMAL11.SA'])
+        ).order_by(IBRX100.ticker)
+        
+        results = db.execute(query).scalars().all()
+        # Clean '.SA' if it's there
+        tickers = sorted(list(set([t.replace('.SA', '') for t in results])))
+        
+        # Fallback in case DB is empty
+        if not tickers:
+            from core.constants import IBRX_100 as static_ibrx
+            tickers = sorted(list(set([t.replace('.SA', '') for t in static_ibrx if t.replace('.SA', '') not in ['BOVA11', 'SMAL11']])))
+            
+        return {"tickers": tickers}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/options/scan", tags=["Opções"])
 async def get_options_scan(db: Session = Depends(get_db)):
     """
@@ -302,9 +329,7 @@ async def get_options_scan(db: Session = Depends(get_db)):
         # Filtra apenas os que têm algo interessante
         query = select(RankOptionsAnalysis).where(
             (RankOptionsAnalysis.squeeze_on == True) | 
-            (RankOptionsAnalysis.qullamaggie_status.in_(['🔥 BREAKOUT', '💤 SETUP FORMANDO'])) |
-            (RankOptionsAnalysis.is_ep == True) |
-            (RankOptionsAnalysis.is_parabolic == True)
+            (RankOptionsAnalysis.qullamaggie_status == '🔥 BREAKOUT')
         ).order_by(RankOptionsAnalysis.momentum_60d.desc())
         
         results = db.execute(query).scalars().all()

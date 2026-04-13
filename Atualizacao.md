@@ -49,3 +49,5 @@ Ao rodar a análise de volatilidade (HV20, HV50, Squeeze) e setups Qullamaggie p
 - [x] Validar todos os módulos no navegador para garantir que a transição ocorra de forma fluida.
 - [x] Corrigido erro 500 no `vol-radar` alterando para retorno 404 quando o ativo não possuir análise na base de dados.
 - [x] Corrigido o filtro de Scanner do IBRX-100 para listar corretamente apenas os ativos com Squeeze ou setups do Qullamaggie ativos/formando.
+- [x] Corrigido a exibição de NaN no Momentum da Seleção Alpha, removendo a coluna "Retorno 12M" que não é mais cacheada, além de forçar conversão correta do Score no Cronjob.
+- [x] Refatorado Design: Adicionado efeito visual Gradiente + Glow no logo "Alpha Lab" e criada uma Landing Page interativa como nova tela de Início (`/`).

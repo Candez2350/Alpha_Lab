@@ -1,165 +1,127 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { 
-  Card, 
-  DonutChart, 
-  Table, 
-  TableHead, 
-  TableRow, 
-  TableHeaderCell, 
-  TableBody, 
-  TableCell 
-} from '@tremor/react'
-import { Wallet, Settings2 } from 'lucide-react'
-import { QuantService } from '@/services/api'
-import { IPortfolio } from '@/types/quant'
+import Link from 'next/link'
+import { Card } from '@tremor/react'
+import { PieChart, ArrowLeftRight, Activity, Sigma, ArrowRight, TrendingUp, ShieldAlert, Sparkles } from 'lucide-react'
 
-export default function AlocacaoDashboard() {
-  const [capital, setCapital] = useState<number>(50000);
-  const [qtdBr, setQtdBr] = useState<number>(10);
-  const [qtdBdr, setQtdBdr] = useState<number>(5);
-  
-  const [portfolio, setPortfolio] = useState<IPortfolio | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-
-  useEffect(() => {
-    const fetchPortfolio = async () => {
-      setLoading(true);
-      try {
-        const data = await QuantService.getMonthlyPortfolio(capital, qtdBr, qtdBdr);
-        setPortfolio(data);
-      } catch (error) {
-        console.error("Erro ao buscar alocação da API:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    const timeoutId = setTimeout(() => {
-      if(capital > 0 && qtdBr > 0 && qtdBdr > 0) {
-        fetchPortfolio();
-      }
-    }, 800);
-    
-    return () => clearTimeout(timeoutId);
-  }, [capital, qtdBr, qtdBdr]);
-
-  const valueFormatter = (number: number) => `R$ ${Intl.NumberFormat('pt-BR').format(number)}`;
-
+export default function Home() {
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out pb-10">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Alocação Tática Mensal</h1>
-        <p className="text-slate-500 text-lg">Otimização de portfólio de caixa zerado para Ações Nacionais e BDRs.</p>
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out pb-10">
+      {/* Header Section */}
+      <div className="flex flex-col gap-4 text-center lg:text-left">
+        <h1 className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
+          Bem-vindo ao <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">Alpha Lab</span>
+        </h1>
+        <p className="text-slate-500 text-lg lg:text-xl max-w-3xl leading-relaxed">
+          O seu Terminal de Inteligência Quantitativa. Tome decisões no mercado financeiro baseadas em dados reais, modelos matemáticos e setups com alta probabilidade estatística.
+        </p>
       </div>
 
-      {/* Painel de Inputs Customizado */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-          <Settings2 size={120} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-slate-700">Capital Disponível (R$)</label>
-            <input 
-              type="number"
-              value={capital}
-              onChange={(e) => setCapital(Number(e.target.value))}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl shadow-sm focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-900 font-semibold text-lg"
-              min={0}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-slate-700">Quantidade Ações Nacionais</label>
-            <input 
-              type="number"
-              value={qtdBr}
-              onChange={(e) => setQtdBr(Number(e.target.value))}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl shadow-sm focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-900 font-semibold text-lg"
-              min={1}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-slate-700">Quantidade BDRs</label>
-            <input 
-              type="number"
-              value={qtdBdr}
-              onChange={(e) => setQtdBdr(Number(e.target.value))}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl shadow-sm focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-900 font-semibold text-lg"
-              min={1}
-            />
-          </div>
-        </div>
-      </div>
-
-      {loading && (
-         <div className="flex items-center justify-center gap-3 text-emerald-700 font-semibold bg-emerald-50 p-6 rounded-2xl border border-emerald-100 shadow-inner">
-           <div className="w-6 h-6 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-           Calculando matriz de otimização em tempo real...
-         </div>
-      )}
-
-      {portfolio && !loading && (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mt-4">
-          <div className="xl:col-span-1 flex flex-col gap-8">
-            <Card className="bg-white border-slate-200 rounded-2xl shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900 mb-6">Macro-Alocação</h3>
-              <DonutChart
-                data={portfolio.allocations}
-                category="totalVolume"
-                index="ticker"
-                valueFormatter={valueFormatter}
-                colors={['emerald', 'teal', 'cyan', 'blue', 'indigo', 'violet', 'fuchsia']}
-                className="h-64"
-                showAnimation={true}
-              />
-            </Card>
-            
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex flex-col gap-3 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition-colors">
-              <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                 <Wallet size={100} className="text-emerald-600" />
-              </div>
-              <div className="flex items-center gap-3 text-emerald-800 font-bold text-lg relative z-10">
-                <Wallet className="text-emerald-600" />
-                Caixa Restante
-              </div>
-              <p className="text-emerald-900 leading-relaxed relative z-10">
-                Após a execução otimizada dos lotes padrão da B3, restará <strong className="text-emerald-700 text-xl block mt-2">{valueFormatter(portfolio.remainingCash)}</strong>
-              </p>
+      {/* Highlights / Features Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Alocação Tática */}
+        <Link href="/alocacao" className="group">
+          <Card className="h-full bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all p-8 flex flex-col gap-4 relative overflow-hidden">
+            <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+              <PieChart size={140} />
             </div>
-          </div>
-
-          <Card className="xl:col-span-2 bg-white border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-            <h3 className="text-lg font-bold text-slate-900 mb-6 px-2">Execução Tática de Lotes</h3>
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <Table className="min-w-full">
-                <TableHead className="bg-slate-50 border-b border-slate-200">
-                  <TableRow>
-                    <TableHeaderCell className="text-slate-500 font-semibold py-4 px-4">Ticker</TableHeaderCell>
-                    <TableHeaderCell className="text-slate-500 font-semibold text-right py-4 px-4">Preço</TableHeaderCell>
-                    <TableHeaderCell className="text-slate-500 font-semibold text-right py-4 px-4">Cotas</TableHeaderCell>
-                    <TableHeaderCell className="text-slate-500 font-semibold text-right py-4 px-4">Financeiro</TableHeaderCell>
-                    <TableHeaderCell className="text-slate-500 font-semibold text-right py-4 px-4">Peso</TableHeaderCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {portfolio.allocations.map((item) => (
-                    <TableRow key={item.ticker} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <TableCell className="font-extrabold text-slate-900 py-5 px-4">
-                        <span className="bg-slate-100 px-2 py-1 rounded-md border border-slate-200">{item.ticker}</span>
-                      </TableCell>
-                      <TableCell className="text-right text-slate-600 py-5 px-4 font-medium">{valueFormatter(item.price)}</TableCell>
-                      <TableCell className="text-right text-slate-700 font-bold py-5 px-4">{item.shares}</TableCell>
-                      <TableCell className="text-right font-extrabold text-emerald-600 py-5 px-4">{valueFormatter(item.totalVolume)}</TableCell>
-                      <TableCell className="text-right text-slate-500 py-5 px-4 font-medium">{(item.weight * 100).toFixed(2)}%</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl w-fit">
+              <PieChart size={28} />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Alocação Tática</h2>
+            <p className="text-slate-500 font-medium leading-relaxed flex-1">
+              Otimize sua carteira de forma inteligente. Utilize nosso modelo matemático de "Caixa Zerado" para distribuir capital balanceando ações nacionais e BDRs de forma eficiente.
+            </p>
+            <div className="flex items-center gap-2 text-blue-600 font-bold mt-2 group-hover:translate-x-2 transition-transform">
+              Acessar Módulo <ArrowRight size={18} />
             </div>
           </Card>
+        </Link>
+
+        {/* Long & Short */}
+        <Link href="/arbitragem" className="group">
+          <Card className="h-full bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all p-8 flex flex-col gap-4 relative overflow-hidden">
+            <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+              <ArrowLeftRight size={140} />
+            </div>
+            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl w-fit">
+              <ArrowLeftRight size={28} />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Long & Short</h2>
+            <p className="text-slate-500 font-medium leading-relaxed flex-1">
+              Encontre distorções no mercado. Scanner estatístico focado em identificar pares de ativos cointegrados (Arbitragem) para operações com neutralidade financeira.
+            </p>
+            <div className="flex items-center gap-2 text-purple-600 font-bold mt-2 group-hover:translate-x-2 transition-transform">
+              Acessar Módulo <ArrowRight size={18} />
+            </div>
+          </Card>
+        </Link>
+
+        {/* Radar Volatilidade */}
+        <Link href="/opcoes" className="group">
+          <Card className="h-full bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all p-8 flex flex-col gap-4 relative overflow-hidden">
+            <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+              <Activity size={140} />
+            </div>
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl w-fit">
+              <Activity size={28} />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Radar Volatilidade</h2>
+            <p className="text-slate-500 font-medium leading-relaxed flex-1">
+              Antecipe movimentos explosivos. Monitoramento avançado do IBRX-100 buscando compressões de volatilidade (Squeeze) e setups Qullamaggie engatilhados.
+            </p>
+            <div className="flex items-center gap-2 text-emerald-600 font-bold mt-2 group-hover:translate-x-2 transition-transform">
+              Acessar Módulo <ArrowRight size={18} />
+            </div>
+          </Card>
+        </Link>
+
+        {/* Seleção Alpha */}
+        <Link href="/alpha" className="group">
+          <Card className="h-full bg-white border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all p-8 flex flex-col gap-4 relative overflow-hidden">
+            <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+              <Sigma size={140} />
+            </div>
+            <div className="p-3 bg-orange-50 text-orange-600 rounded-xl w-fit">
+              <Sigma size={28} />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Seleção Alpha</h2>
+            <p className="text-slate-500 font-medium leading-relaxed flex-1">
+              Stock picking de alta performance. Aplique os filtros consagrados da Magic Formula aliados ao Momentum Setorial para montar carteiras vencedoras a longo prazo.
+            </p>
+            <div className="flex items-center gap-2 text-orange-600 font-bold mt-2 group-hover:translate-x-2 transition-transform">
+              Acessar Módulo <ArrowRight size={18} />
+            </div>
+          </Card>
+        </Link>
+
+      </div>
+
+      {/* Info Footer */}
+      <div className="bg-slate-900 rounded-2xl p-8 lg:p-10 flex flex-col md:flex-row items-center justify-between gap-8 shadow-lg mt-8 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none"></div>
+        <div className="flex flex-col gap-3 relative z-10 text-center md:text-left">
+          <div className="flex items-center justify-center md:justify-start gap-2 text-emerald-400 font-bold text-sm tracking-widest uppercase">
+            <Sparkles size={16} /> Processamento em Batch
+          </div>
+          <h3 className="text-2xl font-bold text-white">Análise diária e automatizada</h3>
+          <p className="text-slate-400 font-medium max-w-xl">
+            Nossos modelos rodam em background diretamente nos servidores, lendo milhares de dados da B3 para garantir que suas análises sejam entregues em milissegundos, com risco zero de bloqueio de API.
+          </p>
         </div>
-      )}
+        <div className="flex gap-4 relative z-10">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center min-w-[120px]">
+            <TrendingUp size={24} className="text-emerald-500 mb-2" />
+            <span className="text-slate-300 font-medium text-sm">Foco em</span>
+            <span className="text-white font-bold">Alta Renda</span>
+          </div>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center min-w-[120px]">
+            <ShieldAlert size={24} className="text-blue-500 mb-2" />
+            <span className="text-slate-300 font-medium text-sm">Modelos</span>
+            <span className="text-white font-bold">Quantitativos</span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

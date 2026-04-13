@@ -50,7 +50,7 @@ def update_rank_alpha_selection(db: Session):
                 ticker=row['ticker'],
                 roic=0.0,
                 evebit=0.0,
-                momentum=row.get('score', 0),
+                momentum=float(row['score']) if 'score' in row else 0.0,
                 setor=row.get('setor', ''),
                 rank_final=0
             ))

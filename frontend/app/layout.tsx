@@ -16,14 +16,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* Sidebar Fixa */}
           <aside className="w-20 lg:w-64 bg-white border-r border-slate-200 shadow-sm flex flex-col items-center lg:items-start py-8 px-4 flex-shrink-0 z-10 relative">
             <div className="mb-12 lg:px-4 w-full flex justify-center lg:justify-start">
-              <span className="font-extrabold text-2xl hidden lg:block text-slate-900 tracking-tight">
-                Alpha <span className="text-emerald-600">Lab</span>
-              </span>
-              <span className="font-extrabold text-2xl lg:hidden text-emerald-600">AL</span>
+              <Link href="/">
+                <span className="font-extrabold text-3xl hidden lg:block tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-emerald-800 to-emerald-500 drop-shadow-sm hover:opacity-80 transition-opacity cursor-pointer">
+                  Alpha Lab
+                </span>
+                <span className="font-extrabold text-2xl lg:hidden text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 to-emerald-400">AL</span>
+              </Link>
             </div>
             
             <nav className="flex flex-col gap-2 w-full">
               <Link href="/" className="flex items-center gap-4 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg p-3 transition-all lg:px-4 group font-medium">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:scale-110 transition-transform text-slate-400 group-hover:text-emerald-600"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span className="hidden lg:block">Início</span>
+              </Link>
+              <Link href="/alocacao" className="flex items-center gap-4 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg p-3 transition-all lg:px-4 group font-medium">
                 <PieChart size={22} className="group-hover:scale-110 transition-transform text-slate-400 group-hover:text-emerald-600" />
                 <span className="hidden lg:block">Alocação Tática</span>
               </Link>
